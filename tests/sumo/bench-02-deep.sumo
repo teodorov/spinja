@@ -1,0 +1,30 @@
+/* bench-02-deep.sumo, needs depth of 500000 (= 5x10^5)                 */
+/* SPIN: sv: 28 byte, states: 5x10^5, trans: 1.25x10^6, depth: 5x10^5   */
+
+short x;
+short y;
+short maxXX;
+short maxYY;
+
+active proctype monitor()
+{
+    maxXX = 499;
+    maxYY = 499;
+    assert (x + y < (maxXX + maxYY));           /* should hold */
+}
+
+active proctype X() 
+{
+    maxXX>0 && maxYY>0;
+    do
+    ::  x = (x+1) % maxXX;
+    od;
+}
+
+active proctype Y() 
+{
+    maxXX>0 && maxYY>0;
+    do
+    ::  y = (y+1) % maxYY;
+    od;
+}

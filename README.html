@@ -1,0 +1,379 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+    <style type="text/css">
+    body {font-family: "lucida grande", lucida, verdana, sans-serif;}
+    body {margin: 20px 50px 0px 50px;}
+    body {background: #f5f5f5;}
+    body {line-height: 140%;}
+    a, a:link, a:visited {text-decoration: none; color: #0082ae;}
+    a:hover {border-color: #0082ae; border-width: 0 0 1px 0; border-style: solid;}
+    h1, h2, h3 {color: #A00; padding-top:15px;}
+    h1, h2 {border-bottom: 2px solid #a1a5a9; padding-bottom: 6px;}
+    h3 {font-style:italic; font-size:100%;}
+    code, pre {font-size: 110%;}
+    table {border-collapse: collapse; }
+    td {border:1px solid #a1a5a9; padding:10px; font-size: 90%; vertical-align: top;}
+    span.lastchanged {color: #AAA; font-size: 20%;}
+    </style>
+
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+    <meta name="author" content="Theo Ruys">
+    <meta name="keywords" content="SpinJa, model checking, Promela, SPIN">
+    <meta name="description" content="readme documentation for SpinJa">
+    <title>SpinJa - README.html documentation</title>
+</head>
+
+<body>
+
+<h1>SpinJa</h1>
+
+<a href="">SpinJa</a> is a model checker for Promela, written 
+in Java. Promela is the modelling language for the 
+<a href="http://spinroot.com">SPIN</a> model checker.
+SpinJa supports a large subset of the Promela language.
+
+<p>
+SpinJa can be used to check for the absence of deadlocks, assertions, 
+liveness properties and LTL properties (via never claims).
+SpinJa verification mode can exploit (nested) depth first search or
+breadth first search. Bitstate hashing and hash compaction modes 
+are also supported. Furthermore, SPIN's partial order reduction 
+and statement merging are implemented. 
+SpinJa can also be used for simulation: random, interactive or guided.
+
+<p>
+SpinJa is designed to behave similarly to SPIN, but to be more 
+easily extendible and reusable. From the start we have committed 
+ourselves to Java and a clean object-oriented approach. 
+Despite the fact that SpinJa uses a layered object-oriented design 
+and is written in Java, SpinJa is not slow: benchmark experiments have 
+shown that on average it is about 3 times slower than the 
+highly optimized SPIN which uses C as implementation language.
+
+<p>
+SpinJa has been developed within the <a href="http://fmt.cs.utwente.nl/">
+Formal Methods and Tools</a> (FMT) group of the 
+<a href="http://www.utwente.nl">University of Twente</a>.<br>
+SpinJa is now an open-source project at 
+<a href="http://code.google.com/p/spinja/">
+http://code.google.com/p/spinja/</a>.<br>
+SpinJa is released under the
+<a href="http://www.apache.org/licenses/LICENSE-2.0.html">
+Apache 2.0 license</a>. 
+
+<h2>Files</h2>
+
+The <em>binary</em> distribution of SpinJa (<code>spinja-0.9-bin.zip</code>)
+contains the following files:
+
+<ul>
+    <li><code>README.html</code>: this file</li>
+    <li><code>spinja.jar</code>: SpinJa binary and library</li>
+    <li><code>spinja.sh</code>: SpinJa shell script</li>
+    <li><code>doc/CHANGES.txt</code>: revision history for SpinJa</li>
+    <li><code>doc/LICENSE.txt</code>: Apache 2.0 license</li>
+    <li><code>tests/</code>: directory with Promela examples</li>
+</ul>
+
+The <em>source</em> distribution of SpinJa (<code>spinja-0.9-src.zip</code>)
+contains two additional directories:
+<ul>
+    <li><code>lib/</code>: additional Java library: the 
+                           <a href="https://javacc.dev.java.net/">JavaCC</a> 
+                           compiler generator</li>
+    <li><code>src/</code>: complete Java source of SpinJa</li>
+</ul>
+
+<p>
+SpinJa has been developed under Windows XP. <br>
+SpinJa 0.9 has been compiled under Mac OS X 10.5.8 using Java
+version 1.6.0_17.
+
+<p>
+As SpinJa is an open-source project at Google code, you can also use SVN to 
+retrieve the latest version from <a href="http://code.google.com/p/spinja/">
+http://code.google.com/p/spinja/</a>.
+
+<h2>Compilation</h2>
+
+<em>
+<small>
+If you have downloaded the binary distribution of SpinJa, you can
+skip this section: the binary distribution already contains a complete
+<code>spinja.jar</code> file.
+</small>
+</em>
+
+<p>
+To automatically build the <code>spinja.jar</code>, you need <code>ant</code>, 
+the Java build tool.
+<pre>
+    cd ./src/
+    ant build
+</pre>
+This will build <code>spinja.jar</code> into the <code>../build/</code> 
+directory.
+
+<p>
+To generate the API documentation of SpinJa do the following:
+<pre>
+    cd ./src/
+    ant javadocs
+</pre>
+This will build the Javadoc documentation of the SpinJa library into the
+<code>../doc/api/</code> directory.
+
+<h2>Installation</h2>
+
+SpinJa requires Java version 1.5 or later.<br>
+The only file that is needed to run SpinJa is <code>spinja.jar</code>.
+This Java jar file contains the SpinJa Promela compiler and all
+utility code that is needed by the generated checker.
+
+<p>
+In the following we assume that <code>spinja.jar</code> resides in 
+the current working directory. It is easier, however, to have 
+<code>spinja.jar</code> available in Java's <code>CLASSPATH</code> 
+environment variable.
+
+<h2>Running SpinJa</h2>
+
+<p>
+Like SPIN, verification with SpinJa is a three-step process: generation,
+compilation and execution:
+<ol>
+    <li><em>Generation.</em>
+        Use <code>spinja.jar</code> to generate a Java verification 
+        program for the Promela model <code>sample.prom</code>:
+        <pre>    java -cp spinja.jar spinja.Compile <i>[options]</i> sample.prom</pre>
+        This generates the Java program
+        <code>./spinja/PanModel.java</code>.<br>
+        The optional <code><i>options</i></code> are SpinJa's 
+        <em>compiler</em> options (see below).
+    </li><br>
+    <li><em>Compilation.</em>
+        Use the <code>javac</code> compiler to compile the generated Java
+        program to Java bytecode:
+        <pre>    javac -cp spinja.jar:. spinja/PanModel.java</pre>
+        This will generate several Java class files in 
+        <code>./spinja/</code>. 
+    </li><br>
+    <li><em>Execution.</em>
+        Run the compiled Java program which checks the original Promela model:
+        <pre>    java -cp spinja.jar:. spinja.PanModel <i>[options]</i></pre>
+        The optional <code><i>options</i></code> are SpinJa's 
+        <em>model checking</em> options (see below).
+    </li>
+</ol>
+
+After the verification, one can safely remove the generated
+<code>./spinja/</code> directory.
+
+<h3>Shell script</h3>
+
+To ease these tedious steps, a shell script is provided, which automates 
+the whole process: <code>spinja.sh</code>. Verification of
+<code>sample.prom</code> is now straightforward:
+<pre>    ./spinja.sh <i>[options]</i> sample.prom</pre>
+The optional <code><i>options</i></code> will be passed to the 
+SpinJa model checker. 
+
+<h3>SpinJa compiler options</h3>
+
+For the generation of the Java program with <code>spinja.Compile</code>, 
+SpinJa supports the following options to tune the generation process:
+
+<ul>
+    <li><code>-n<i>text</i></code>:
+        sets the name of the model to <code><i>text</i></code>
+        (default: <code>Pan</code>). </li>
+    <li><code>-o3</code>:
+        disables statement merging</li>
+    <li><code>-s<i>text</i></code>:
+        sets the output directory for the sourcecode to 
+        <code><i>text</i></code>
+        (default: <code>spinja</code>)</li>
+    <li><code>-v</code>:
+        shows diagnostic information on the compilation process.</li>
+</ul>
+
+<h3>SpinJa model checker options</h3>
+
+The generated SpinJa model checker supports several run-time options
+to guide the verification or simulation of the original Promela model.
+
+<p>
+<b>Verification.</b>
+In <em>verification</em> mode, SpinJa understands the following options
+to steer the verification process.
+<em>
+<small>
+Note that most options coincide with SPIN's C compiler options or 
+pan's run-time options.
+</small>
+</em>
+
+<ul>
+    <li><code>-a</code>: 
+        checks for acceptance cycles</li>
+    <li><code>-A</code>: 
+        assert statements will be ignored</li>
+    <li><code>-b</code>: 
+        exceeding the depth limit is considered an error</li>
+    <li><code>-c<i>n</i></code>:
+        stops the verification after N errors (default: 1); 
+        when set to 0, SpinJa will not stop for any error</li>
+    <li><code>-DARRAY</code>:
+        uses a hash table that uses array lists instead of probing</li>
+    <li><code>-DBFS</code>:
+        uses a Breadth First Search algorithm</li>
+    <li><code>-DBITSTATE</code>:
+        uses bitstate hashing for storing states (approximate search)</li>
+    <li><code>-DHC</code>:
+        uses hash compaction for storing states (approximate search)</li>
+    <li><code>-DNOREDUCE</code>:
+        disables the partial order reduction algoritm</li>
+    <li><code>-E</code>:
+        ignore invalid end states (deadlocks)</li>
+    <li><code>-k<i>n</i></code>:
+        sets N bits per state when using bitstate hashing (default: 3)</li>
+    <li><code>-m<i>n</i></code>:
+        sets the maximum search depth (default: 10000)</li>
+    <li><code>-N</code>:
+        ignores any never claim (if present)</li>
+    <li><code>-v</code>:
+        prints the version number and exits</li>
+    <li><code>-w<i>n</i></code>:
+        sets the number of entries in the hash table to 2^N (default: 21)</li>
+</ul>
+
+<p>
+<b>Simulation.</b>
+Instead of a verification run, one can also use SpinJa's generated 
+application for simulation. Like SPIN, SpinJa supports three 
+simulation modes.
+
+<ul>
+    <li><code>-DGRANDOM</code>:
+        uses a randomizer to guide the search</li>
+    <li><code>-DGTRAIL</code>:
+        uses the generated trail-file to guide the search</li>
+    <li><code>-DGUSER</code>:
+        uses user input to guide the search</li>
+</ul>
+
+<h3>Java options</h3>
+
+To configure the Java VM which runs the SpinJa model checker, one can 
+supply additional options to the <code>java</code> program.
+
+The <code>spinja.sh</code> script, for example, currently uses 
+the following Java options:
+<ul>
+    <li><code>-Xss16m</code>: sets thread stack size to 16Mb,</li>
+    <li><code>-Xms256m</code>: sets the initial heap size to 256Mb,</li>
+    <li><code>-Xmx1024m</code>: sets the maximum heap size to 1024Mb.</li>
+</ul>
+Note that without such settings for the Java VM, Spinja 
+would not be able to verify very large Promela models.
+
+<h2>Known issues</h2>
+
+<h3>Promela</h3>
+
+SpinJa does not yet support the full Promela language. <br>
+Currently, the following aspects of Promela are <em>not</em> yet implemented:
+<ul>
+    <li><code>unless</code> statement</li>
+    <li>user defined types (i.e., <code>typedef</code> definitions)</li>
+    <li>communication: 
+        sorted send (<code>!!</code>),
+        random receive (<code>??</code>), 
+        non-removing receive (<code>&lt;</code>..<code>&gt;</code>)</li>
+    <li>labels within <code>d_step</code> and communication 
+        within <code>d_step</code></li>
+    <li>remote references: <code>@</code><i>labelname</i> and
+        <code>:</code><i>varname</i></li>
+    <li>special variables: <code>np_</code>, <code>pc_value</code>,
+        <code>enabled</code></li>
+    <li>Promela's C code extensions (e.g., <code>c_code</code>, 
+        <code>c_expr</code>)</li>
+</ul>
+
+<h3>Bugs</h3>
+
+<ul>
+    <li>When the hash table gets full (i.e., the parameter for 
+        <code>-w</code> was too low), the automatic resizing of the 
+        hash table is not always working properly. 
+        <em>Work around:</em> rerun the model checker with a 
+        higher value for <code>-w</code>. </li>
+</ul>
+
+<h2>License</h2>
+
+SpinJa is released under the
+<a href="http://www.apache.org/licenses/LICENSE-2.0.html">
+Apache 2.0 license</a>.
+
+<h2>People</h2>
+
+<ul>
+    <li>Marc de Jonge: principal designer of SpinJa 0.8.</li>
+    <li>Theo Ruys: supervisor of SpinJa project.</li>
+</ul>
+
+Communication about SpinJa is controlled through SpinJa's project at Google 
+code: <a href="http://code.google.com/p/spinja/">http://code.google.com/p/spinja/</a>.
+
+<h2>Further Reading</h2>
+
+For general documentation on Promela and the model checker SPIN,
+please consult the <a href="spinroot.com">SPIN</a> website, which
+hosts a wealth of information on the subjects.
+
+More specific information on the design and implementation of SpinJa 
+can be found in the following two MSc theses.
+
+<ul>
+    <li> Marc de Jonge.<br>
+        <a href="http://fmt.cs.utwente.nl/msc-completed/jonge-msc-thesis.pdf">
+        The SpinJ Model Checker - A fast, extensible, object-oriented 
+        model checker</a>.<br>
+        MSc Thesis, University of Twente, The Netherlands, September 2008.<br>
+        <em>This MSc thesis describes the design and implementation
+        of SpinJa 0.8 in detail.</em>
+    </li><br>
+    <li>Mark Kattenbelt.<br>
+        <a href="http://fmt.cs.utwente.nl/msc-completed/kattenbelt-msc-thesis.pdf">
+        Towards an Explicit-State Model Checking Framework</a>.<br>
+        MSc Thesis, University of Twente, The Netherlands, September 2006.<br>
+        <em>This MSc this presents a layered, object-oriented design for
+        explicit-state model checkers. SpinJa's design is based on 
+        this approach.</em>
+    </li>
+</ul>
+
+<h2>Version history</h2>
+
+<table>
+<tr><td>0.9</td>   
+    <td>2010.04.10</td>     
+    <td>First public release of SpinJa (binary and <em>source</em>).</td>
+</tr>
+<tr><td>0.8</td>   
+    <td>2008.09.10</td>     
+    <td>Initial version of SpinJa after MSc Project of Marc de Jonge.</td>
+</tr>
+</table>
+
+<br><p>
+<span class="lastchanged">
+This page has last been updated by Theo Ruys on Saturday, 10 April 2010.
+</span>
+
+</body>
+</html>

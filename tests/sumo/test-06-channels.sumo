@@ -1,0 +1,22 @@
+/* test-06-channels.sumo - checking whether channels work correctly */
+
+chan ch = [2] of {short};
+
+active proctype Sender()
+{
+    do
+    ::  ch!1;
+    ::  ch!2;
+    od
+}
+
+active proctype Receiver()
+{
+    short msg;
+    do
+    ::  ch?1
+    ::  ch?2
+    ::  ch?msg -> assert(msg == 1)      /* should *not* hold     */
+    ::  ch?3   -> assert(0)             /* should be unreachable */
+    od
+}

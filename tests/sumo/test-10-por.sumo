@@ -1,0 +1,29 @@
+/* test-10-por.sumo - simple and naive program to test correcntess of POR */
+
+active proctype P()
+{
+    short n;
+    short max;
+
+    max = 20;
+    do
+    ::  n <  max -> n=n+1;
+    ::  n >= max -> break;
+    od;
+
+    assert(n <= max);                   /* should hold */
+}
+
+active proctype Q()
+{
+    short n;
+    short max;
+
+    max = 20;
+    do
+    ::  n <  max -> n=n+1;
+    ::  n >= max -> break;
+    od;
+
+    assert(n <= max);                   /* should hold */
+}

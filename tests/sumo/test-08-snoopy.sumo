@@ -1,0 +1,220 @@
+/* test-08-snoopy.sumo - SPIN's snoopy cache algorithm in SUMO. */
+/* contains invalid endstates (= deadlocks)                     */
+
+chan tocpu0     = [2] of { short };
+chan fromcpu0   = [2] of { short };
+chan tobus0     = [2] of { short };
+chan frombus0   = [2] of { short };
+chan grant0     = [2] of { short };
+
+chan tocpu1     = [2] of { short };
+chan fromcpu1   = [2] of { short };
+chan tobus1     = [2] of { short };
+chan frombus1   = [2] of { short };
+chan grant1     = [2] of { short };
+
+chan claim0     = [2] of { short };
+chan claim1     = [2] of { short };
+chan release0   = [2] of { short };
+chan release1   = [2] of { short };
+
+active proctype cpu0()
+{
+    do
+    :: fromcpu0!257  -> tocpu0?270
+    :: fromcpu0!258  -> tocpu0?270
+    :: fromcpu0!259 -> tocpu0?270
+    od
+}
+
+active proctype cpu1()
+{
+    do
+    :: fromcpu1!257  -> tocpu1?270
+    :: fromcpu1!258  -> tocpu1?270
+    :: fromcpu1!259 -> tocpu1?270
+    od
+}
+
+active proctype cache0()
+{
+    short state;
+    short which;
+    short label;
+
+    state = 3;
+    label = 129;
+
+    do
+    ::  (label == 129) ->
+            do
+            :: frombus0?260 ->
+                if
+                :: (state == 1) -> state = 2; tobus0!267
+                :: (state != 1) -> tobus0!270
+                fi
+            :: frombus0?263 -> state = 3; tobus0!264
+            :: frombus0?262 ->
+                if
+                :: (state == 1) -> state = 3; tobus0!267
+                :: (state == 2) -> state = 3; tobus0!270
+                :: (state == 3) -> tobus0!270
+                fi
+            :: fromcpu0?257 ->
+                if
+                :: (state != 3) -> tocpu0!270
+                :: (state == 3) -> which = 260; label = 130; break
+                fi
+            :: fromcpu0?258 ->
+                if
+                :: (state == 1) -> tocpu0!270
+                :: (state != 1) -> which = 263; label = 130; break
+                fi
+            :: fromcpu0?259 ->
+                if
+                :: (state == 1) -> tocpu0!270
+                :: (state != 1) -> which = 262; label = 130; break
+                fi
+            od;
+
+    ::  (label == 130) ->
+            claim0!265;
+            do
+            :: frombus0?260 ->
+                if
+                :: (state == 1) -> state = 2; tobus0!267
+                :: (state != 1) -> tobus0!270
+                fi
+            :: frombus0?263 -> state = 3; tobus0!264
+            :: frombus0?262 ->
+                if
+                :: (state == 1) -> state = 3; tobus0!267
+                :: (state == 2) -> state = 3; tobus0!270
+                :: (state == 3) -> tobus0!270
+                fi
+            :: grant0?269 ->
+                if
+                :: (which == 260) -> state = 2
+                :: (which == 263) -> state = 1
+                :: (which == 262) -> state = 1
+                fi;
+                tocpu0!270;
+                break
+            od;
+            release0!270;
+
+            if
+            :: (which == 260) -> tobus0!260 -> frombus0?268
+            :: (which == 263) -> tobus0!263 -> frombus0?270
+            :: (which == 262) -> tobus0!262 -> frombus0?268
+            fi;
+            label = 129;
+    od
+}
+
+active proctype cache1()
+{   
+    short state;
+    short which;
+    short label;
+
+    state = 3;
+    label = 129;
+
+    do
+    ::  (label == 129) ->
+            do
+            :: frombus1?260 ->
+                if
+                :: (state == 1) -> state = 2; tobus1!267
+                :: (state != 1) -> tobus1!270
+                fi
+            :: frombus1?263 -> state = 3; tobus1!264
+            :: frombus1?262 ->
+                if
+                :: (state == 1) -> state = 3; tobus1!267
+                :: (state == 2) -> state = 3; tobus1!270
+                :: (state == 3) -> tobus1!270
+                fi
+            :: fromcpu1?257 ->
+                if
+                :: (state != 3) -> tocpu1!270
+                :: (state == 3) -> which = 260; label=130; break
+                fi
+            :: fromcpu1?258 ->
+                if
+                :: (state == 1) -> tocpu1!270
+                :: (state != 1) -> which = 263; label=130; break
+                fi
+            :: fromcpu1?259 ->
+                if
+                :: (state == 1) -> tocpu1!270
+                :: (state != 1) -> which = 262; label=130; break
+                fi
+            od;
+
+    ::  (label == 130) ->
+            claim1!266;
+            do
+            :: frombus1?260 ->
+                if
+                :: (state == 1) -> state = 2; tobus1!267
+                :: (state != 1) -> tobus1!270
+                fi
+            :: frombus1?263 -> state = 3; tobus1!264
+            :: frombus1?262 ->
+                if
+                :: (state == 1) -> state = 3; tobus1!267
+                :: (state == 2) -> state = 3; tobus1!270
+                :: (state == 3) -> tobus1!270
+                fi
+            :: grant1?269 ->
+                if
+                :: (which == 260) -> state = 2
+                :: (which == 263) -> state = 1
+                :: (which == 262) -> state = 1
+                fi;
+                tocpu1!270;
+                break
+            od;
+            release1!270;
+
+            if
+            :: (which == 260) -> tobus1!260 -> frombus1?268
+            :: (which == 263) -> tobus1!263 -> frombus1?270
+            :: (which == 262) -> tobus1!262 -> frombus1?268
+            fi;
+            label=129;
+    od
+}
+
+active proctype busarbiter()
+{
+    do
+    :: claim0?265 -> grant0!269; release0?270
+    :: claim1?266 -> grant1!269; release1?270
+    od
+}
+
+active proctype bus()   
+{
+    do
+    :: tobus0?267 -> frombus1!268
+    :: tobus1?267 -> frombus0!268
+
+    :: tobus0?270 -> frombus1!268
+    :: tobus1?270 -> frombus0!268
+
+    :: tobus0?264 -> frombus1!270
+    :: tobus1?264 -> frombus0!270
+
+    :: tobus0?260 -> frombus1!260
+    :: tobus1?260 -> frombus0!260
+
+    :: tobus0?263 -> frombus1!263
+    :: tobus1?263 -> frombus0!263
+
+    :: tobus0?262 -> frombus1!262
+    :: tobus1?262 -> frombus0!262
+    od
+}

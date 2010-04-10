@@ -1,0 +1,28 @@
+/* test-02-mutex-deadlock.sumo - attempt #2 to a mutual exclusion algorithm */
+ 
+short a;
+short b;
+short mutex;
+
+active proctype monitor() 
+{
+    assert(mutex != 2);     /* should hold, but system can now DEADLOCK */
+}
+
+active proctype A() 
+{
+    a = 1; 
+    b == 0;
+    mutex = mutex+1;
+    mutex = mutex-1;
+    a = 0;
+}
+
+active proctype B() 
+{
+    b = 1; 
+    a == 0;
+    mutex = mutex+1;
+    mutex = mutex-1;
+    b = 0;
+}

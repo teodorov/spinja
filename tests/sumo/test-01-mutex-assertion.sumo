@@ -1,0 +1,27 @@
+/* test-01-mutex-assertion.sumo - attempt #1 to a mutual exclusion algorithm */
+
+short flag;
+short mutex;
+
+active proctype monitor() 
+{
+    assert(mutex != 2);     /* should *not* hold */
+}
+
+active proctype A()
+{
+    flag != 1;
+    flag  = 1;
+    mutex = mutex+1;
+    mutex = mutex-1;
+    flag  = 0;
+}
+
+active proctype B() 
+{
+    flag != 1;
+    flag  = 1;
+    mutex = mutex+1;
+    mutex = mutex-1;
+    flag  = 0;
+}

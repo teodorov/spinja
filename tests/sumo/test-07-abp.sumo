@@ -1,0 +1,79 @@
+/* test-07-abp.sumo - Alternating Bit Protocol for SUMO (no errors). */
+
+short MAX;
+short BITLIMIT;
+short DLIMIT;
+
+chan toS      = [1] of {short};
+chan toR      = [1] of {short};
+chan ctimeout = [1] of {short};
+
+active proctype Sender()
+{
+    short msg;
+    short data;
+    short ab;
+    short rcvab;
+    
+    MAX=32;
+    BITLIMIT=4096;
+    DLIMIT=2;
+    
+    ab=0;
+    data=0;
+    do
+    ::  msg = data + BITLIMIT*ab;
+        toR ! msg   ->
+        if
+        ::  toS ? rcvab ->  
+                if
+                :: (rcvab == ab) -> ab   = 1-ab;
+                                    data = (data+1) % MAX;
+                :: (rcvab != ab) -> 1
+                fi
+        ::  ctimeout ? 1 -> 1
+        fi
+    od
+}
+
+active proctype Receiver() 
+{
+    short msg;
+    short rcvdata;
+    short rcvab;
+    short expdata;
+    short expab;
+    
+    (MAX>0 && BITLIMIT>0 && DLIMIT>0);
+    expab=0;
+    expdata=0;
+    do
+    ::  toR ? msg ->
+        rcvab   = msg / BITLIMIT;
+        rcvdata = msg % BITLIMIT;
+        if
+        ::  (rcvab == expab) -> assert (rcvdata == expdata);
+                                expab   = 1-expab;
+                                expdata = (expdata+1) % MAX;
+        ::  (rcvab != expab) -> 1
+        fi;
+        toS ! rcvab
+    od
+}
+
+active proctype Daemon()
+{
+    short n;
+    short msg;
+
+    (MAX>0 && BITLIMIT>0 && DLIMIT>0);
+    n = 0;
+    do
+    ::  n<DLIMIT    ->  if
+                    ::  toS ? msg -> ctimeout ! 1
+                    ::  toR ? msg -> ctimeout ! 1
+                    fi;
+                    n = n+1;
+    ::  n>=DLIMIT   ->  break;
+    od;
+}

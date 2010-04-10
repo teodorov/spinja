@@ -1,0 +1,30 @@
+/* small-02-deep.sumo, needs depth of 10000                     */
+/* SPIN: sv: 28 byte, states: 10100, trans: 25250, depth: 9900  */
+
+short x;
+short y;
+short maxXX;
+short maxYY;
+
+active proctype monitor()
+{
+    maxXX = 49;
+    maxYY = 100;
+    assert (x + y < (maxXX + maxYY));       /* should hold */
+}
+
+active proctype X() 
+{
+    maxXX>0 && maxYY>0;
+    do
+    ::  x = (x+1) % maxXX;
+    od;
+}
+
+active proctype Y() 
+{
+    maxXX>0 && maxYY>0;
+    do
+    ::  y = (y+1) % maxYY;
+    od;
+}

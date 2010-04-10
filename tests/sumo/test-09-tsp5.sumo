@@ -1,0 +1,76 @@
+/* test-09-tsp5.sumo - SUMO model of a 5x5 TSP.                 */
+/* SUMO specification of a TSP, generated with mat2sumo.awk.    */
+
+/* TSP:
+
+   -   8   1  12  13
+   3   -  30  15  23
+   1   1   -  28  27
+  18  15  26   -   6
+  23   4  21  11   -
+
+ */
+
+short cost;
+short loc;
+short MINCOST;
+
+short v0;
+short v1;
+short v2;
+short v3;
+short v4;
+
+active proctype TSP()
+{
+  MINCOST=24;
+  v0=0;
+  v1=0;
+  v2=0;
+  v3=0;
+  v4=0;
+
+  v0=1;
+  loc=0;
+  do
+  ::  (v0*v1*v2*v3*v4*1) == 1 -> break;
+  ::  (loc == 0) && 
+      (v0*v1*v2*v3*v4*1 == 0) ->
+          if
+          ::  (v1==0) -> cost = cost + 8; v1 = 1; loc = 1;
+          ::  (v2==0) -> cost = cost + 1; v2 = 1; loc = 2;
+          ::  (v3==0) -> cost = cost + 12; v3 = 1; loc = 3;
+          ::  (v4==0) -> cost = cost + 13; v4 = 1; loc = 4;
+          fi;
+  ::  (loc == 1) && 
+      (v0*v1*v2*v3*v4*1 == 0) ->
+          if
+          ::  (v2==0) -> cost = cost + 30; v2 = 1; loc = 2;
+          ::  (v3==0) -> cost = cost + 15; v3 = 1; loc = 3;
+          ::  (v4==0) -> cost = cost + 23; v4 = 1; loc = 4;
+          fi;
+  ::  (loc == 2) && 
+      (v0*v1*v2*v3*v4*1 == 0) ->
+          if
+          ::  (v1==0) -> cost = cost + 1; v1 = 1; loc = 1;
+          ::  (v3==0) -> cost = cost + 28; v3 = 1; loc = 3;
+          ::  (v4==0) -> cost = cost + 27; v4 = 1; loc = 4;
+          fi;
+  ::  (loc == 3) && 
+      (v0*v1*v2*v3*v4*1 == 0) ->
+          if
+          ::  (v1==0) -> cost = cost + 15; v1 = 1; loc = 1;
+          ::  (v2==0) -> cost = cost + 26; v2 = 1; loc = 2;
+          ::  (v4==0) -> cost = cost + 6; v4 = 1; loc = 4;
+          fi;
+  ::  (loc == 4) && 
+      (v0*v1*v2*v3*v4*1 == 0) ->
+          if
+          ::  (v1==0) -> cost = cost + 4; v1 = 1; loc = 1;
+          ::  (v2==0) -> cost = cost + 21; v2 = 1; loc = 2;
+          ::  (v3==0) -> cost = cost + 11; v3 = 1; loc = 3;
+          fi;
+  od;
+  assert(cost >= MINCOST);  /* should *not* hold - MINCOST=23 should hold */
+}
+
