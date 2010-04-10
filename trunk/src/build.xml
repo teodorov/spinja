@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<project name="SpinJa" default="build" basedir=".">
+	<target name="init" description="Initializes the build variables">
+		<property name="name"           value="spinja" />
+		<property name="version"        value="0.9"  />
+
+		<property name="spinja"         value="spinja" />
+		<property name="spinja_parser"  value="spinja/promela/compiler/parser" />
+
+		<property name="build"          value="../build" />
+		<property name="dist"           value="../dist" />
+		<property name="doc"            value="../doc" />
+		<property name="lib"            value="../lib" />
+	</target>
+
+	<target name="prepare" description="Creates the output directories" depends="init">
+		<mkdir dir="${build}/classes" />
+		<mkdir dir="${doc}/api" />
+	</target>
+
+	<target name="javacc" description="Generates the java-files from the JavacCC specification" depends="prepare">
+		<javacc target="${spinja_parser}/Promela.jj" 
+			javacchome="${lib}" 
+			outputdirectory="${spinja_parser}" 
+		/>
+	</target>
+
+	<target name="compile" description="Compiles all java files" depends="javacc">
+		<javac destdir="${build}/classes" source="1.5" srcdir="${spinja}" />
+	</target>
+
+	<target name="jar" description="Generates jar-file" depends="compile">
+		<jar destfile="${build}/${name}.jar">
+			<fileset dir="${build}/classes">
+				<include name="**/*.class" />
+			</fileset>
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Implementation-Version" value="${version} ${TODAY}" />
+				<attribute name="Main-Class" value="spinja.Compile" />
+			</manifest>
+		</jar>
+		<copy file="${build}/${name}.jar" todir=".." />
+	</target>
+
+	<target name="build" depends="jar">
+	</target>
+
+	<target name="javadocs" description="Generates the Javadoc of the SpinJa library" depends="prepare">
+		<javadoc destdir="${doc}/api" author="true" version="true" windowtitle="SpinJa API">
+			<fileset dir="${spinja}" defaultexcludes="yes">
+				<include name="**/*.java" />
+			</fileset>
+		</javadoc>
+	</target>
+
+	<target name="all" description="Builds all: jar-file and Javadoc documentation" depends="jar,javadocs">
+	</target>
+    
+	<target name="clean" description="Cleans all generated files: build, doc/api and dist" depends="init">
+		<delete includeemptydirs="true" failonerror="false">
+			<fileset dir="${build}" />
+			<fileset dir="${doc}/api" />
+			<fileset dir="${dist}" />
+		</delete>
+	</target>
+
+	<target name="very_clean" description="Clean + remove JavaCC generated Java files" depends="clean">
+		<delete failonerror="false">
+			<fileset dir="${spinja_parser}" 
+				includes="*.java" 
+				excludes="MyParseException.java,OptionsResult.java,SequenceResult.java" 
+			/>
+		</delete>
+	</target>
+
+	<target name="bin_dist" description="Creates the *binary* distribution for SpinJa" depends="jar">
+		<property name="bname" value="spinja-${version}-bin" />
+		<mkdir dir="${dist}" />
+		<zip destfile="${dist}/${bname}.zip">
+			<zipfileset dir=".." includes="README.html spinja.sh" prefix="${bname}" />
+			<zipfileset dir="../build" includes="spinja.jar" prefix="${bname}" />
+			<zipfileset dir="../doc"   includes="CHANGES.txt LICENSE.txt" prefix="${bname}/doc" />
+			<zipfileset dir="../tests" prefix="${bname}/tests" />
+		 </zip>
+	</target>
+
+	<target name="src_dist" description="Creates the *source* distribution for SpinJa" depends="bin_dist">
+		<property name="sname" value="spinja-${version}-src" />
+		<zip destfile="${dist}/${sname}.zip">
+			<zipfileset dir=".." includes="README.html spinja.sh" prefix="${sname}" />
+			<zipfileset dir="../build" includes="spinja.jar" prefix="${sname}" />
+			<zipfileset dir="../doc"   includes="CHANGES.txt LICENSE.txt" prefix="${sname}/doc" />
+			<zipfileset dir="../tests" prefix="${sname}/tests" />
+			<zipfileset dir="../lib"   prefix="${sname}/lib" />
+			<zipfileset dir="../src"   prefix="${sname}/src" />
+		 </zip>
+	</target>
+
+	<target name="dist" description="Builds the binary and source distributions" depends="src_dist">
+	</target>
+
+</project>

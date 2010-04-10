@@ -1,0 +1,35 @@
+/* test-03-mutex-dekker.sumo - Dekker's mutual exclusion algorithm */
+ 
+short a;
+short b;
+short mutex;
+short turn;
+
+active proctype monitor() 
+{
+    assert(mutex != 2);     /* should hold, and *no* deadlocks */
+}
+
+active proctype A()
+{
+    do 
+    ::  a = 1; 
+        turn = 2;
+        (b == 0) || (turn == 1);
+        mutex = mutex+1;
+        mutex = mutex-1;
+        a = 0;
+    od;
+}
+
+active proctype B()
+{
+    do
+    ::  b = 1; 
+        turn = 1;
+        (a == 0) || (turn == 2);
+        mutex = mutex+1;
+        mutex = mutex-1;
+        b = 0;
+    od;
+}

@@ -1,0 +1,40 @@
+/* bench-10-bakery.sumo - Bakery mutual exclusion algorithm in SUMO. */
+ 
+short mutex;
+short turnA;
+short turnB;
+
+active proctype monitor() 
+{
+    assert(mutex <= 2);   /* should hold as the maximum of procs is 2 :-) */
+}
+
+active proctype A()
+{
+    do
+    ::  turnA = 1;
+        if
+        ::  turnB <  32765 -> turnA = turnB + 1;
+        ::  turnB >= 32765 -> turnA = 0;
+        fi;
+        (turnB == 0) || (turnA < turnB);
+        mutex = mutex+1;
+        mutex = mutex-1;
+        turnA = 0;
+    od;
+}
+
+active proctype B()
+{
+    do
+    ::  turnB = 1;
+        if
+        ::  turnA <  32765 -> turnB = turnA + 1;
+        ::  turnA >= 32765 -> turnB = 0;
+        fi;
+        (turnA == 0) || (turnB < turnA);
+        mutex = mutex+1;
+        mutex = mutex-1;
+        turnB = 0;
+    od;
+}

@@ -1,0 +1,138 @@
+/* bench-04-generated.sumo - generated from a m4 script */
+
+short g1;
+short g2;
+short g3;
+short g4;
+
+active proctype P1 () {
+  short p11;
+  short p12;
+  short p13;
+  short p14;
+ 
+  if
+  ::  p11 = 1;
+  ::  p12 = 2;
+  fi;  
+  if
+  ::  p12 = 2;
+  ::  p13 = 3;
+  fi;  
+  if
+  ::  p13 = 3;
+  ::  p14 = 4;
+  fi; 
+
+ 
+  if
+  ::  p11 = 1;
+  ::  p12 = 2;
+  fi;  
+  if
+  ::  p12 = 2;
+  ::  p13 = 3;
+  fi;  
+  if
+  ::  p13 = 3;
+  ::  p14 = 4;
+  fi; 
+
+  if
+  ::  g1 = g1 + p11;
+  ::  g2 = g2 + p12;
+  ::  g3 = g3 + p13;
+  ::  g4 = g4 + p14;
+  fi;
+}
+
+active proctype P2 () {
+  short p21;
+  short p22;
+  short p23;
+  short p24;
+ 
+  if
+  ::  p21 = 1;
+  ::  p22 = 2;
+  fi;  
+  if
+  ::  p22 = 2;
+  ::  p23 = 3;
+  fi;  
+  if
+  ::  p23 = 3;
+  ::  p24 = 4;
+  fi; 
+
+ 
+  if
+  ::  p21 = 1;
+  ::  p22 = 2;
+  fi;  
+  if
+  ::  p22 = 2;
+  ::  p23 = 3;
+  fi;  
+  if
+  ::  p23 = 3;
+  ::  p24 = 4;
+  fi; 
+
+  if
+  ::  g1 = g1 + p21;
+  ::  g2 = g2 + p22;
+  ::  g3 = g3 + p23;
+  ::  g4 = g4 + p24;
+  fi;
+}
+
+active proctype P3 () {
+  short p31;
+  short p32;
+  short p33;
+  short p34;
+
+ 
+  if
+  ::  p31 = 1;
+  ::  p32 = 2;
+  fi;  
+  if
+  ::  p32 = 2;
+  ::  p33 = 3;
+  fi;  
+  if
+  ::  p33 = 3;
+  ::  p34 = 4;
+  fi; 
+
+ 
+  if
+  ::  p31 = 1;
+  ::  p32 = 2;
+  fi;  
+  if
+  ::  p32 = 2;
+  ::  p33 = 3;
+  fi;  
+  if
+  ::  p33 = 3;
+  ::  p34 = 4;
+  fi; 
+
+  if
+  ::  g1 = g1 + p31;
+  ::  g2 = g2 + p32;
+  ::  g3 = g3 + p33;
+  ::  g4 = g4 + p34;
+  fi;
+}
+
+active proctype check() {
+  assert ( g1 + g2 + g3 + g4 + 0 >= 0 );    /* should hold */
+}
+
+active proctype DoesNotTerminate() {
+    do :: 0!=1; od;
+}

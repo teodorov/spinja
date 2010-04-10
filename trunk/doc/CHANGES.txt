@@ -1,0 +1,25 @@
+SpinJa - Revision History
+
+0.9 (10-Apr-2010):
+- Changed name of model checker from SpinJ to SpinJa.
+- SpinJa is now a open-source project at Google Code:
+  http://code.google.com/p/spinja/
+- Added README.html with usage instructions.
+- Added spinja.sh script to verify Promela models more easily.
+- Added new version of JavaCC 5.0 library.
+- Added SUMO benchmark models to ./tests/ directory.
+- Updated ANT build.xml file: added binary and source distributions.
+- Added Apache 2.0 license to all source files.
+- Added version and copyright message to SpinJa.
+- Simplified the package structure: the directories spinj_lib and 
+  spinj_promela have been merged into a single directory: spinja.
+- Disabled the generation of the Java file name on basis of the
+  Promela file name: the default name is now PanModel.java
+- Instead of storing the generated Java program (default PanModel.java)
+  into ./spinja/generated/, it is now stored into ./spinja/
+- Disabled the possibility to build a .jar file containing the
+  generated Java program.
+- Changed the way MultiStringOptions are shown with printUsage.
+
+0.8 (10-Sep-2008):
+- Initial version of SpinJ after MSc Project of Marc de Jonge.

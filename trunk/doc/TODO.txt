@@ -1,0 +1,35 @@
+SpinJa TODOs
+
+MAJOR
+ -  Implementation of unless statement.
+ -  Implememtation of user defined typedef definitions
+ -  Implementation of SPIN's -DREVERSE -DP_RAND -DT_REVERSE -DT_RANDOM modes
+
+MINOR
+ -  Implementation of missing communication primitives:
+        sorted send             ch!!
+        random receive          ch??
+        non-removing receive    ch?<..>
+
+ -  Implementation of remote references (i.e. P@label and P:label).
+
+ -  Implementation of special variables/functions: np_, pc_value, enabled
+
+ -  Full support for d_step sequences:
+     -  support for labels in d_step sequences
+     -  support for communication within d_step sequences
+
+ -  Fix automatic resizing of hash table when hash table gets full
+    (i.e., parameter to -w is too low). 
+        Now the checker seems to get into some kind of livelock and 
+        does not proceed/respond anymore.
+
+ -  spinja/options/OptionParser.java
+        OptionParser::printUsage()
+            When printing the options, the options should be printed
+            in alphabetical order, but *ignoring* case. Currently,
+            first the uppercase options are printed, and then the 
+            lowercase options.
+
+ -  Simulation: show a more user friendly error trace 
+    (see for instance the Erigone model checker).

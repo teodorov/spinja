@@ -1,0 +1,35 @@
+/* small-01-average.sumo - two counters                         */
+/* SPIN: sv: 32 byte, states: 10000, trans: 20000, depth: 299   */
+
+short x;
+short y;
+short xdone;
+short maxXX;
+short maxYY;
+
+active proctype monitor()
+{
+    maxXX = 99;
+    maxYY = 96;
+    do
+    ::  assert (x + y <= (maxXX + maxYY));      /* should hold */
+    od;
+}
+
+active proctype X() 
+{
+    maxXX > 0 && maxYY > 0;
+    do
+    ::  x < maxXX -> x=x+1;
+    ::  break;
+    od;
+    xdone=1;
+}
+
+active proctype Y() 
+{
+    xdone>0;
+    do
+    ::  y = (y+1) % maxYY;
+    od;
+}

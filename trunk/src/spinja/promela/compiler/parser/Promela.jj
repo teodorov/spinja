@@ -1,0 +1,965 @@
+// Copyright 2010, University of Twente, Formal Methods and Tools group
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+options {
+  JDK_VERSION = "1.5";
+  STATIC = false;
+}
+
+PARSER_BEGIN(Promela)
+package spinja.promela.compiler.parser;
+
+import spinja.promela.compiler.*;
+import spinja.promela.compiler.automaton.*;
+import spinja.promela.compiler.expression.*;
+import spinja.promela.compiler.variable.*;
+import spinja.promela.compiler.actions.*;
+import java.io.*;
+import java.util.*;
+
+public class Promela {
+	private Specification specification;
+	private Proctype currentProc;
+	private Automaton automaton;	
+		
+	private int procNr;
+	
+	public int getNextProcNr() {
+		return procNr++;
+	}
+	
+	private Map<String, State> labels = new HashMap<String, State>();
+	
+	private Map<State, Token> gotos = new HashMap<State, Token>();
+	
+	private Variable _pid = new Variable(VariableType.BYTE, "_pid", 1);
+	
+	VariableType type;
+	
+	private void setGotos() throws ParseException {
+		for(State n : gotos.keySet()) {
+			Token t = gotos.get(n);
+			State ref = labels.get(t.image);
+			if(ref == null) {
+				throw new MyParseException("Could not find label: " + t.image, t);
+			}
+			new GotoTransition(n, ref, "goto " + t.image);
+		}
+		gotos.clear();
+		labels.clear();
+	}
+}
+PARSER_END(Promela)
+
+TOKEN : {	/* Keywords */
+	<PROCTYPE: "proctype">
+|	<INIT: "init">
+|	<NEVER: "never">
+|	<TRACE: "trace">
+|	<NOTRACE: "notrace">
+|	<TYPEDEF: "typedef">
+|	<MTYPE: "mtype">
+|	<BIT: "bit">
+|	<BOOL: "bool">
+|	<BYTE: "byte">
+|	<PID: "pid">
+|	<SHORT: "short">
+|	<INT: "int">
+|	<CHAN: "chan">
+|	<ACTIVE: "active">
+|	<PRIORITY: "priority">
+|	<PROVIDED: "provided">
+|	<HIDDEN: "hidden">
+|	<SHOW: "show">
+|	<XR: "xr">
+|	<XS: "xs">
+|	<OF: "of">
+|	<EVAL: "eval">
+|	<IF: "if">
+|	<FI: "fi">
+|	<DO: "do">
+|	<OD: "od">
+|	<ATOMIC: "atomic">
+|	<D_STEP: "d_step">
+|	<ELSE: "else">
+|	<BREAK: "break">
+|	<GOTO: "goto">
+|	<PRINT: "printf">
+|	<ASSERT: "assert">
+|	<LEN: "len">
+|	<TIMEOUT: "timeout">
+|	<NP_: "np_">
+|	<ENABLED: "enabled">
+|	<PC_VALUE: "pc_value">
+|	<RUN: "run">
+|	<FULL: "full">
+|	<EMPTY: "empty">
+|	<NFULL: "nfull">
+|	<NEMPTY: "nempty">
+|	<TRUE: "true">
+|	<FALSE: "false">
+|	<SKIP_: "skip">
+|	<UNLESS: "unless">
+|	<VAR_PID: "_pid">
+}
+
+TOKEN : {	/* Operators */
+	<LCURLY: "{">
+|	<RCURLY: "}">
+|	<ASSIGN: "=">
+|	<LPAREN: "(">
+|	<RPAREN: ")">
+|	<LBRACK: "[">
+|	<RBRACK: "]">
+|	<OPTION: "::">
+|	<COLON: ":">
+|	<SEMICOLON: ";">
+|	<COMMA: ",">
+|	<RARROW: "->">
+|	<CH_SEND_SORTED: "!!">
+|	<CH_READ: "?">
+|	<CH_READ_RAND: "??">
+|	<AT: "@">
+|	<BNOT: "~">
+|	<LNOT: "!">
+|	<MINUS: "-">
+|	<TIMES: "*">
+|	<DIVIDE: "/">
+|	<MODULO: "%">
+|	<PLUS: "+">
+|	<LSHIFT: "<<">
+|	<RSHIFT: ">>">
+|	<LT: "<">
+|	<LTE: "<=">
+|	<GT: ">">
+|	<GTE: ">=">
+|	<EQ: "==">
+|	<NEQ: "!=">
+|	<BAND: "&">
+|	<XOR: "^">
+|	<BOR: "|">
+|	<LAND: "&&">
+|	<LOR: "||">
+|	<INCR: "++">
+|	<DECR: "--">
+|	<DOT: ".">
+}
+
+TOKEN : { /* Identifiers and numbers */
+	<IDENTIFIER: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z"] | ["0"-"9"] | "_")* >
+|	<NUMBER: (["0"-"9"])+ >
+}
+
+SKIP : { // Skip whitespace and comments
+ 	" "
+|	"\r"
+|	"\t"
+|	"\n"
+|	"/*" : IN_COMMENT
+}
+
+<IN_COMMENT> SKIP: {
+	< ~[] >
+}
+
+<IN_COMMENT> SKIP: {
+	"*/": DEFAULT
+}
+
+MORE : { // The string
+	"\"": IN_STRING
+}
+
+<IN_STRING> MORE: {
+	< ~["\""] >
+}
+
+<IN_STRING> TOKEN: {
+	<STRING: "\"">: DEFAULT
+}
+
+/* The specification itself */
+Specification spec(String name): {
+	specification = new Specification(name);
+}{	
+	(module()) +
+	{ return specification; }
+}
+
+/* Each part in the specification is a called a module */
+void module(): {
+}{
+	utype()
+|	LOOKAHEAD(mtype()) mtype()
+|	one_decl(specification.getVariableStore())
+|	proctype()
+|	init()
+|	never()
+|	<SEMICOLON>
+}
+
+/*** Here the different modules are defined ***/
+
+/* Definition of a process */
+void proctype(): {
+	int nrActive = 0;
+	Token n, id;
+	State s;
+}{
+	(<ACTIVE> 
+	  { nrActive = 1; }
+	  (<LBRACK> n=<NUMBER> { nrActive = Integer.parseInt(n.image); } <RBRACK>)?
+	)?
+	<PROCTYPE>
+	id=<IDENTIFIER>
+	{
+		currentProc = new Proctype(specification, getNextProcNr(), nrActive, id.image);
+		automaton = currentProc.getAutomaton();
+		specification.addProc(currentProc);
+	}
+	<LPAREN> (decl_list(currentProc))? <RPAREN>
+	{ currentProc.lastArgument(); }
+	(priority())?
+	(enabler())?
+	<LCURLY> s=sequence(currentProc.getStartState(), null, false) <RCURLY>
+	{
+		if(s != null) {
+			new EndTransition(s);
+		}
+		setGotos();
+	}
+}
+
+void priority(): {
+	ConstantExpression c;
+}{
+	<PRIORITY> c=constant()
+	{ currentProc.setPriority(c.getNumber()); }
+}
+
+void enabler(): {
+	Expression expr;
+}{
+	<PROVIDED> <LPAREN> expr=expr() <RPAREN>
+	{ currentProc.setEnabler(expr); }
+}
+
+/* An init process */
+void init(): {
+	State s;
+}{
+	<INIT>
+	{
+		currentProc = new Proctype(specification, getNextProcNr(), 1, "init");
+		automaton = currentProc.getAutomaton();
+		specification.addProc(currentProc);
+		currentProc.lastArgument();
+	}
+	(priority())?
+	<LCURLY> s=sequence(currentProc.getStartState(), null, false) <RCURLY>
+	{
+		if(s != null) {
+			new EndTransition(s);
+		}
+		setGotos();
+	}
+}
+
+void never(): {
+	State s;
+}{
+	<NEVER>
+	{
+		currentProc = new Proctype(specification, getNextProcNr(), 0, "never");
+		automaton = currentProc.getAutomaton();
+		specification.setNever(currentProc);
+		currentProc.lastArgument();
+	}
+	<LCURLY> s=sequence(currentProc.getStartState(), null, false) <RCURLY>
+	{
+		if(s != null) {
+			new NeverEndTransition(s);
+		}
+		setGotos();
+	}
+}
+
+void utype(): {
+	Token id;
+}{
+	<TYPEDEF> id=<IDENTIFIER> 
+	{ 
+		throw new MyParseException("User defined types are not (yet) supported", id);
+		//CustomVariableType custom = new CustomVariableType(id.image);
+		//specification.addType(custom);
+	}
+	<LCURLY> /*decl_list(custom.getVariableStore())*/ <RCURLY>
+}
+
+void mtype(): {
+	Token id;
+}{
+	<MTYPE> (<ASSIGN>)? <LCURLY> id=<IDENTIFIER>
+	{ specification.addMType(id.image); }
+	(<COMMA> id=<IDENTIFIER>
+	{ specification.addMType(id.image); }
+	)* <RCURLY>
+}
+
+/*** Here the declarations start ***/
+
+void decl_list(VariableContainer store): {
+}{
+	one_decl(store) (<SEMICOLON> one_decl(store))*
+}
+
+void one_decl(VariableContainer store): {
+}{
+	type=typename()
+	(LOOKAHEAD( {type instanceof ChannelType} )
+	  ivar_chan(store) (<COMMA> ivar_chan(store))*
+	| ivar(store, type) (<COMMA> ivar(store, type))*
+	)
+}
+
+void ivar(VariableContainer store, VariableType type): {
+	Token id;
+	int arraySize = 1;
+	Expression expr = null;
+	ConstantExpression c = null;
+}{
+	id=<IDENTIFIER> 
+	(<LBRACK> c=constant() <RBRACK> { arraySize = c.getNumber(); })? 
+	{ Variable var = new Variable(type, id.image, arraySize); }
+	(<ASSIGN> 
+	  expr=lor_expr()
+	  {	var.setInitExpr(expr); }
+	)?
+	{ store.addVariable(var); }
+}
+
+void ivar_chan(VariableContainer store): {
+	Token id;	
+	int arraySize = 1;
+	ConstantExpression c = null;
+	ChannelVariable var;
+}{
+	id=<IDENTIFIER>
+	(<LBRACK> c=constant() <RBRACK> { arraySize = c.getNumber(); })? 
+	{ var = new ChannelVariable(id.image, arraySize); }
+	(<ASSIGN> ch_init(var))?
+	{ store.addVariable(var); var.setRead(true); }
+}
+
+void ch_init(ChannelVariable var): {
+	Expression size;
+	VariableType type;
+	ChannelType ctype;
+}{
+	<LBRACK> size=constant() <RBRACK> <OF> 
+	{ 
+		ctype = specification.newChannelType(size.getConstantValue());
+		var.setType(ctype); 
+	}
+	<LCURLY> type=typename() 
+	{ ctype.addType(type); }
+	(<COMMA> type=typename()
+	{ ctype.addType(type); }
+	)* <RCURLY>
+}
+
+VariableType typename(): {
+	Token t;
+}{
+	<BIT> { return VariableType.BIT; }
+|	<BOOL> { return VariableType.BOOL; }
+|	<BYTE> { return VariableType.BYTE; }
+|	<PID> { return VariableType.PID; }
+|	<SHORT> { return VariableType.SHORT; }
+|	<INT> { return VariableType.INT; }
+|	<MTYPE> { return VariableType.MTYPE; }
+|	<CHAN> { return ChannelType.UNASSIGNED_CHANNEL; }
+|	t=<IDENTIFIER> {
+		throw new MyParseException("The given type was not supported", t); 
+		//return specification.getType(t.image); 
+	}
+}
+
+/*** Here all the normal statements are defined ***/
+
+State sequence(State start, State breakNode, boolean inAtomic): {
+	Expression expr;
+	Token id, t;
+	State end = start;
+	Transition trans;
+}{
+(	delim() (end=sequence(end, breakNode, inAtomic))?
+|	LOOKAHEAD(one_decl())
+	one_decl(currentProc)
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	<XR> expr=varref()
+	{ currentProc.addXR((Identifier)expr); } 
+	(<COMMA> expr=varref() { currentProc.addXR((Identifier)expr); })*
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	<XS> expr=varref()
+	{ currentProc.addXS((Identifier)expr); } 
+	(<COMMA> expr=varref() { currentProc.addXS((Identifier)expr); })*
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	<IF> 
+	{ end = new State(automaton, inAtomic); }
+	(option(start, end, breakNode, inAtomic))+
+	<FI>
+	(end=sequence(end, breakNode, inAtomic))?
+|	<DO> 
+	{ end = new State(automaton, inAtomic); }
+	(option(start, start, end, inAtomic))+
+	<OD>
+	(end=sequence(end, breakNode, inAtomic))?
+|	LOOKAHEAD(<IDENTIFIER> <COLON>)
+	id=<IDENTIFIER> <COLON>
+	{
+		if(labels.containsKey(id.image)) {
+			throw new MyParseException("Duplicate label", id);
+		}
+		labels.put(id.image, start);
+		start.addLabel(id.image);
+	}
+	end=sequence(end, breakNode, inAtomic)
+|	LOOKAHEAD(channel_statement())
+	end=channel_statement(start, breakNode, inAtomic)
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	LOOKAHEAD(assign())
+	end=assign(start, breakNode, inAtomic)
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	expr=expr()
+	{
+		end = new State(automaton, inAtomic);
+		start.newTransition(new ExprAction(expr), end);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<ELSE>
+	{
+		end = new State(automaton, inAtomic);
+		//start.newTransition(new ElseAction(t), end);
+		new ElseTransition(start, end);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<GOTO> id=<IDENTIFIER>
+	{
+		gotos.put(start, id);
+		end = new State(automaton, inAtomic);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<PRINT> <LPAREN> id=<STRING>
+	{ PrintAction pa = new PrintAction(t, id.image); }
+	(<COMMA> arg_lst(pa))? <RPAREN>
+	{	
+		end = new State(automaton, inAtomic);
+		start.newTransition(pa, end);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<ASSERT> expr=expr()
+	{
+		end = new State(automaton, inAtomic);
+		start.newTransition(new AssertAction(t, expr), end);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<BREAK>
+	{
+		if(breakNode == null) {
+			throw new MyParseException("Breakstatement found without a do-loop to break out of!", t);
+		}
+		new GotoTransition(start, breakNode, "break");
+		end = new State(automaton, inAtomic);
+	}
+	(delim() (end=sequence(end, breakNode, inAtomic))?)?
+|	t=<ATOMIC>
+	{
+		end = new State(automaton, true);
+		new UselessTransition(start, end, "ATOMIC");
+	}
+	<LCURLY> end=sequence(end, breakNode, true) <RCURLY>
+	{ 
+		end.setInAtomic(false);
+	}
+	(end=sequence(end, breakNode, inAtomic))?
+|	t=<D_STEP>
+	{ 
+		end = new State(automaton, inAtomic);
+		trans = start.newTransition(end); 
+	}
+	<LCURLY> dstep_sequence(trans) <RCURLY>
+	(end=sequence(end, breakNode, inAtomic))?
+|	<LCURLY> end=sequence(start, breakNode, inAtomic) <RCURLY>
+	(end=sequence(end, breakNode, inAtomic))?
+)	{ return end; }
+}
+
+void delim(): {}{
+	<SEMICOLON> | <RARROW>
+}
+
+void option(State start, State end, State breakNode, boolean inAtomic): {
+	State tempEnd;
+}{
+	<OPTION>
+	{ 
+		State s = new State(automaton, inAtomic);
+		new UselessTransition(start, s, "OPTION"); 
+	}
+	tempEnd=sequence(s, breakNode, inAtomic)
+	{ if(tempEnd != null) end.merge(tempEnd); }
+}
+
+State channel_statement(State start, State breakNode, boolean inAtomic): {
+	Expression expr;
+	Token t;
+	State end = new State(automaton, inAtomic);
+}{
+	expr=varref()
+	( t=<LNOT> 
+	  {
+	  	ChannelSendAction send = new ChannelSendAction(t, ((Identifier)expr).getVariable());
+		start.newTransition(send, end);
+	  }
+	  send_args(send)
+	| t=<CH_SEND_SORTED> 
+	  { throw new MyParseException("Sorted send is not yet supported!", t); }
+	  send_args(null)
+	| t=<CH_READ>
+	  ( {
+	  	  ChannelReadAction read = new ChannelReadAction(t, ((Identifier)expr).getVariable());
+		  start.newTransition(read, end);
+	    }
+	    recv_args(read)
+	  | {
+	  	  //ChannelCopyAction copy = new ChannelCopyAction(t, ((Identifier)expr).getVariable());
+		  //start.newTransition(copy, end);
+		  throw new MyParseException("Non-removing receive is not yet supported!", t);
+	    }
+	    <LT> recv_args(null) <GT>
+	  )
+	| t=<CH_READ_RAND>
+	  { throw new MyParseException("Random receive from channels is not yet supported!", t); }
+	  ( recv_args(null)
+	  | <LT> recv_args(null) <GT>
+	  )
+	)
+	{ return end; }
+}
+
+State assign(State start, State breakNode, boolean inAtomic): {
+	Identifier id;
+	Expression expr;
+	Token t;
+	State end = new State(automaton, inAtomic);
+}{
+	expr=varref()
+	{
+		try {
+			id = (Identifier)expr;
+		} catch(ClassCastException ex) {
+			throw new MyParseException("Not a valid identifier on the left side of the assignment", expr.getToken());
+		}
+	}
+	  ( t=<ASSIGN> expr=lor_expr()
+	  { start.newTransition(new AssignAction(t, id, expr), end); }
+	  | t=<INCR>
+	  { start.newTransition(new AssignAction(t, id), end); }
+	  | t=<DECR>
+	  { start.newTransition(new AssignAction(t, id), end); }
+	  )
+	{ return end; }
+}
+
+/*** Special dstep statement parsing ***/
+
+void dstep_sequence(ActionContainer cont): {
+	Token t;
+	Expression expr;
+	OptionAction opt;
+}{
+	delim() (dstep_sequence(cont))?
+|	LOOKAHEAD(one_decl())
+	{ throw new ParseException("Variables can not be declared inside a d_step"); }
+	one_decl(null)
+	(delim() (dstep_sequence(cont))?)?
+|	(t=<XR> | t=<XS>) expr=varref()
+	{ throw new MyParseException("Can not declare exclusive reads or writes in a d_step", t); } 
+	(<COMMA> expr=varref())*
+	(delim() (dstep_sequence(cont))?)?
+|	t=<IF> 
+	{ opt = new OptionAction(t, false); cont.addAction(opt); }
+	(dstep_option(opt))+
+	<FI>
+	(dstep_sequence(cont))?
+|	t=<DO>
+	{ opt = new OptionAction(t, true); cont.addAction(opt); }
+	(dstep_option(opt))+
+	<OD>
+	(dstep_sequence(cont))?
+|	LOOKAHEAD(<IDENTIFIER> <COLON>)
+	<IDENTIFIER> t=<COLON>
+	{ throw new MyParseException("Goto-labels are not supported in a d_step", t); }
+	dstep_sequence(cont)
+|	LOOKAHEAD(dstep_channel_statement())
+	dstep_channel_statement(cont)
+	(delim() (dstep_sequence(cont))?)?
+|	LOOKAHEAD(dstep_assign())
+	dstep_assign(cont)
+	(delim() (dstep_sequence(cont))?)?
+|	expr=expr()
+	{ cont.addAction(new ExprAction(expr)); }
+	(delim() (dstep_sequence(cont))?)?
+|	t=<ELSE>
+	{ cont.addAction(new ElseAction(t)); }
+	(delim() (dstep_sequence(cont))?)?
+|	t=<GOTO> <IDENTIFIER>
+	{ throw new MyParseException("Goto-statements are not supported in a d_step", t); }
+	(delim() (dstep_sequence(cont))?)?
+|	t=<PRINT> <LPAREN> <STRING>
+	(<COMMA> arg_lst(null))? <RPAREN>
+	//TODO
+	(delim() (dstep_sequence(cont))?)?
+|	t=<ASSERT> expr=expr()
+	{ cont.addAction(new AssertAction(t, expr)); }
+	(delim() (dstep_sequence(cont))?)?
+|	t=<BREAK>
+	{ cont.addAction(new BreakAction(t)); }
+	(delim() (dstep_sequence(cont))?)?
+|	t=<ATOMIC> // is ignored
+	<LCURLY> dstep_sequence(cont) <RCURLY>
+	(dstep_sequence(cont))?
+|	t=<D_STEP> // is ignored
+	<LCURLY> dstep_sequence(cont) <RCURLY>
+	(dstep_sequence(cont))?
+|	<LCURLY> dstep_sequence(cont) <RCURLY>
+	(dstep_sequence(cont))?
+}
+
+void dstep_option(OptionAction opt): {
+	Sequence seq;
+}{
+	<OPTION>
+	{ seq = opt.startNewOption(); }
+	dstep_sequence(seq)
+}
+
+void dstep_channel_statement(ActionContainer cont): {
+	Token t;
+}{
+	varref()
+	( t=<LNOT>
+	  { throw new MyParseException("d_step: channel send is not yet supported!", t); } 
+	  send_args(null)
+	| t=<CH_SEND_SORTED> 
+	  { throw new MyParseException("d_step: sorted send is not yet supported!", t); }
+	  send_args(null)
+	| t=<CH_READ>
+	  { throw new MyParseException("d_step: channel receive is not yet supported!", t); }
+	  ( recv_args(null)
+	  | <LT> recv_args(null) <GT>
+	  )
+	| t=<CH_READ_RAND>
+	  { throw new MyParseException("d_step: random receive from channels is not yet supported!", t); }
+	  ( recv_args(null)
+	  | <LT> recv_args(null) <GT>
+	  )
+	)
+}
+
+void dstep_assign(ActionContainer cont): {
+	Identifier id;
+	Expression expr;
+	Token t;
+}{
+	expr=varref()
+	{
+		try {
+			id = (Identifier)expr;
+		} catch(ClassCastException ex) {
+			throw new MyParseException("Not a valid identifier on the left side of the assignment", expr.getToken());
+		}
+	}
+	  ( t=<ASSIGN> expr=lor_expr()
+	  {	cont.addAction(new AssignAction(t, id, expr)); }
+	  | t=<INCR>
+	  {	cont.addAction(new AssignAction(t, id, null)); }
+	  | t=<DECR>
+	  {	cont.addAction(new AssignAction(t, id, null)); }
+	  )
+}
+
+/*** Arguments parsing ***/
+
+void send_args(CompoundExpression c): {
+	Expression expr;
+}{
+	LOOKAHEAD(lor_expr() <LPAREN>) 
+	expr=lor_expr() 
+	{ c.addExpression(expr); }
+	<LPAREN> arg_lst(c) <RPAREN>
+|	arg_lst(c)
+}
+
+void recv_args(CompoundExpression c): {
+}{
+	recv_arg(c)
+	( (<COMMA> recv_arg(c))+
+	| <LPAREN> recv_args(c) <RPAREN>
+	)?
+}
+
+void recv_arg(CompoundExpression c): {
+	Token t;
+	Expression expr;
+}{
+	expr=varref()
+	{ c.addExpression(expr); }
+|	t=<EVAL> <LPAREN> expr=varref() <RPAREN>
+	{ c.addExpression(new EvalExpression(t, expr)); }
+|	expr=constant()
+	{ c.addExpression(expr); }
+}
+
+void arg_lst(CompoundExpression expr): {
+	Expression ex1;
+}{
+	(ex1=lor_expr()
+	{ expr.addExpression(ex1); }
+	(<COMMA> ex1=lor_expr()
+	{ expr.addExpression(ex1); }
+	)*
+	)?
+}
+
+/*** All expression statements ***/
+
+Expression varref(): {
+	Token id;
+	Expression expr = null;
+	Identifier ident;
+}{
+	id=<IDENTIFIER>
+	{
+		int mtypeNr = specification.getMType(id.image);
+		if(mtypeNr >= 0) {
+			return new MTypeReference(id, mtypeNr);
+		}
+	}
+	(<LBRACK> expr=lor_expr() <RBRACK>)? 
+	{
+		if(currentProc != null && currentProc.hasVariable(id.image)) {
+			ident = new Identifier(id, currentProc.getVariable(id.image), expr);
+		} else if(specification.getVariableStore().hasVariable(id.image)) {
+			ident = new Identifier(id, specification.getVariableStore().getVariable(id.image), expr);
+		} else {
+			throw new MyParseException("Undeclared identifier: " + id.image, id);
+		}
+	}	
+	(id=<DOT> expr=varref()
+	{ throw new MyParseException("User defined types not yet supported!", id); }
+	)?
+	{ return ident; }
+|	id=<VAR_PID>
+	{ return new Identifier(id, _pid, null); }
+}
+
+Expression base_expr(): {
+	Expression ex1, ex2, ex3;
+	Token t, id;
+}{
+	LOOKAHEAD(<LPAREN> lor_expr() <RARROW>) 
+	<LPAREN> ex1=lor_expr() t=<RARROW> ex2=lor_expr() <COLON> ex3=lor_expr() <RPAREN>
+	{ return new AritmicExpression(t, ex1, ex2, ex3); }
+|	<LPAREN> ex1=expr() <RPAREN>
+	{ return ex1; }
+|	t=<LEN> <LPAREN> ex1=varref() <RPAREN>
+	{ return new ChannelLengthExpression(t, ex1); }
+|	LOOKAHEAD(<IDENTIFIER> <LBRACK> lor_expr() <RBRACK> <AT> <IDENTIFIER>)
+	t=<IDENTIFIER> <LBRACK> lor_expr() <RBRACK> <AT> <IDENTIFIER>
+	{ throw new MyParseException("At expressions are not yet supported!", t); }
+|	ex1=varref()
+	  ( t=<CH_READ> <LBRACK> recv_args(null) <RBRACK>
+	  { throw new MyParseException("Channel read with brackets are not yet supported!", t); }
+	  | t=<CH_READ_RAND> <LBRACK> recv_args(null) <RBRACK>
+	  { throw new MyParseException("Channel random read with brackets are not yet supported!", t); }
+	  )?
+	{ return ex1; }
+|	ex1=constant()
+	{ return ex1; }
+|	t=<TIMEOUT>
+	{ return new TimeoutExpression(t); }
+|	t=<NP_>
+	{ throw new MyParseException("np_ expressions are not yet supported!", t); }
+|	t=<ENABLED> <LPAREN> lor_expr() <RPAREN>
+	{ throw new MyParseException("enabled expressions are not yet supported!", t); }
+|	t=<PC_VALUE> <LPAREN> lor_expr() <RPAREN>
+	{ throw new MyParseException("pc_value expressions are not yet supported!", t); }
+|	t=<RUN> id=<IDENTIFIER> 
+	{ RunExpression runExpr = new RunExpression(t, specification, id.image); }
+	<LPAREN> arg_lst(runExpr) <RPAREN>
+	{ return runExpr; }
+|	t=chanop() <LPAREN> ex1=varref() <RPAREN>
+	{ return new ChannelOperation(t, ex1); }
+}
+
+Expression unary_expr(): {
+	Expression ex1;
+	Token t;
+}{
+	(t=<BNOT> | t=<MINUS>) ex1=unary_expr()
+	{ return new AritmicExpression(t, ex1); }
+|	t=<LNOT> ex1=unary_expr()
+	{ return new BooleanExpression(t, ex1); }
+|	ex1=base_expr()
+	{ return ex1; }
+}
+
+Expression mul_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=unary_expr()
+	  ((t=<TIMES> | t=<DIVIDE> | t=<MODULO>) ex2=mul_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression add_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=mul_expr()
+	  ((t=<PLUS> | t=<MINUS>) ex2=add_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }	  
+	  )?
+	{ return ex1; }
+}
+
+Expression shift_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=add_expr()
+	  ((t=<LSHIFT> | t=<RSHIFT>) ex2=shift_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression cmp_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=shift_expr()
+	  ((t=<LT> | t=<GT> | t=<LTE> | t=<GTE>) ex2=cmp_expr()
+	  { return new CompareExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression eq_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=cmp_expr()
+	  ((t=<EQ> | t=<NEQ>) ex2=eq_expr()
+	  { return new CompareExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression and_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=eq_expr() 
+	  (t=<BAND> ex2=and_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }	
+	  )?
+	{ return ex1; }
+}
+
+Expression xor_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=and_expr() 
+	  (t=<XOR> ex2=xor_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }	
+	  )?
+	{ return ex1; }
+}
+
+Expression or_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=xor_expr() 
+	  (t=<BOR> ex2=or_expr()
+	  { return new AritmicExpression(t, ex1, ex2); }	
+	  )?
+	{ return ex1; }
+}
+
+Expression land_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=or_expr() 
+	  (t=<LAND> ex2=land_expr()
+	  { return new BooleanExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression lor_expr(): {
+	Expression ex1, ex2;
+	Token t;
+}{
+	ex1=land_expr() 
+	  (t=<LOR> ex2=lor_expr()
+	  { return new BooleanExpression(t, ex1, ex2); }
+	  )?
+	{ return ex1; }
+}
+
+Expression expr(): {
+	Expression ex1;
+}{
+	ex1=lor_expr()
+	{ return ex1; }
+}
+
+Token chanop(): {
+	Token t;
+}{
+	(t=<FULL> | t=<NFULL> | t=<EMPTY> | t=<NEMPTY>)
+	{ return t; }
+}
+
+ConstantExpression constant(): {
+	Token n;
+}{
+	n=<TRUE>
+	{ return new ConstantExpression(n, 1); }
+|	n=<FALSE>
+	{ return new ConstantExpression(n, 0); }
+|	n=<SKIP_>
+	{ return new ConstantExpression(n, 1); }
+|	n=<NUMBER>
+	{ return new ConstantExpression(n, Integer.parseInt(n.image)); }
+}

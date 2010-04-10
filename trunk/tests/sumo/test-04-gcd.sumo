@@ -1,0 +1,19 @@
+/* test-04-gcd.sumo - compute the greatest common divisor of two numbers */
+
+active proctype gcd()
+{
+    short x;
+    short y;
+
+    x = 6817;
+    y = 13753;
+    
+    do
+    ::  x < y  -> y = y-x;
+    ::  x > y  -> x = x-y;
+    ::  x == y -> break;
+    od;
+    
+    assert (x == 17);               /* should hold */
+}
+

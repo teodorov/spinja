@@ -1,0 +1,35 @@
+/* bench-01-average.sumo - two counters                         */
+/* SPIN: sv: 28 byte, states: 5x10^5, trans: 10^6, depth: 1999  */
+
+short x;
+short y;
+short xdone;
+short maxXX;
+short maxYY;
+
+active proctype monitor()
+{
+    maxXX = 499;
+    maxYY = 996;
+    do
+    ::  assert (x + y <= (maxXX + maxYY));      /* should hold */
+    od;
+}
+
+active proctype X() 
+{
+    maxXX > 0 && maxYY > 0;
+    do
+    ::  x < maxXX -> x=x+1;
+    ::  break;
+    od;
+    xdone=1;
+}
+
+active proctype Y() 
+{
+    xdone>0;
+    do
+    ::  y = (y+1) % maxYY;
+    od;
+}

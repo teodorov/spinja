@@ -1,0 +1,63 @@
+/* small-05-wide.sumo - wider state space                       */
+/* SPIN: sv: 32 byte, states: 10282, trans: 16212, depth: 8     */
+
+short a;
+short b;
+short c;
+
+active proctype monitor()
+{
+   assert(a+b+c <= 27);     /* should hold */
+}
+
+active proctype A()
+{
+   if
+   ::  a=0;
+   ::  a=1;
+   ::  a=2;
+   ::  a=3;
+   ::  a=4;
+   ::  a=5;
+   ::  a=6;
+   ::  a=7;
+   ::  a=8;
+   ::  a=9;
+   fi;
+}
+
+active proctype B()
+{
+   if
+   ::  b=0;
+   ::  b=1;
+   ::  b=2;
+   ::  b=3;
+   ::  b=4;
+   ::  b=5;
+   ::  b=6;
+   ::  b=7;
+   ::  b=8;
+   ::  b=9;
+   fi;
+}
+
+active proctype C()
+{
+   if
+   ::  c=0;
+   ::  c=1;
+   ::  c=2;
+   ::  c=3;
+   ::  c=4;
+   ::  c=5;
+   ::  c=6;
+   ::  c=7;
+   ::  c=8;
+   ::  c=9;
+   fi;
+}
+
+active proctype DoesNotTerminate() {
+    do :: 0!=1; od;
+}
