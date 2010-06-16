@@ -99,7 +99,6 @@ public abstract class Expression {
 	 *         and it is advised that future addition should not have any side-effect.
 	 * @throws ParseException
 	 */
-	@SuppressWarnings("unused")
 	public String getSideEffect() throws ParseException {
 		return null;
 	}

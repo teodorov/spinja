@@ -15,7 +15,9 @@
 package spinja.promela.compiler.parser;
 
 public class MyParseException extends ParseException {
-    public MyParseException(String message, Token token) {
+	private static final long serialVersionUID = 2026932200848510897L;
+
+	public MyParseException(String message, Token token) {
         super(String.format("(@%d:%d) %s", token.beginLine, token.beginColumn, message));
     }
 }

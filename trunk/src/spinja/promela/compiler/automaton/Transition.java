@@ -17,11 +17,8 @@ package spinja.promela.compiler.automaton;
 import java.util.Collections;
 import java.util.Iterator;
 
-import org.omg.CORBA._PolicyStub;
-
 import spinja.promela.compiler.actions.Action;
 import spinja.promela.compiler.actions.ActionContainer;
-import spinja.promela.compiler.actions.ChannelReadAction;
 import spinja.promela.compiler.actions.ChannelSendAction;
 import spinja.promela.compiler.parser.ParseException;
 import spinja.util.StringWriter;

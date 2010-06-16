@@ -14,7 +14,12 @@
 
 package spinja.search;
 
-import static spinja.search.Message.*;
+import static spinja.search.Message.DEADLOCK;
+import static spinja.search.Message.DUPLICATE_STATE;
+import static spinja.search.Message.EXCEED_DEPTH_ERROR;
+import static spinja.search.Message.EXCEED_DEPTH_WARNING;
+import static spinja.search.Message.NO_MORE_TRANSITIONS;
+import static spinja.search.Message.TRANS_ERROR;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryNotificationInfo;
@@ -31,7 +36,6 @@ import spinja.model.Model;
 import spinja.model.Transition;
 import spinja.store.StateStore;
 import spinja.store.hash.HashAlgorithm;
-import spinja.store.hash.HashAlgorithm.HashGenerator;
 import spinja.util.ByteArrayStorage;
 
 /**
@@ -45,6 +49,8 @@ import spinja.util.ByteArrayStorage;
 public abstract class SearchAlgorithm<M extends Model<T>, 
 									  T extends Transition> extends Algoritm
 	implements NotificationListener, NotificationFilter {
+
+	private static final long serialVersionUID = -9221923281786933752L;
 
 	protected final M model;
 

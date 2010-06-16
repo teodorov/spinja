@@ -21,7 +21,6 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 
 import spinja.exceptions.SpinJaException;
-import spinja.model.Condition;
 import spinja.model.Model;
 import spinja.model.Transition;
 import spinja.store.StateStore;

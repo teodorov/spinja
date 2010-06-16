@@ -18,10 +18,9 @@ import java.util.Arrays;
 
 import spinja.exceptions.SpinJaException;
 import spinja.model.Transition;
-import spinja.store.hash.HashAlgorithm;
 
 public class Stack implements SearchableStack {
-	private final HashAlgorithm hash;
+	//private final HashAlgorithm hash;
 
 	private int top;
 
@@ -39,7 +38,6 @@ public class Stack implements SearchableStack {
 	
 	private long bytes;
 
-	@SuppressWarnings("unchecked")
 	public Stack(int size) {
 		top = -1;
 		this.size = size;
@@ -61,7 +59,7 @@ public class Stack implements SearchableStack {
 
 		bytes = 128 + 12 * size + 4 * hashSize;
 
-		hash = HashAlgorithm.getDefaultAlgorithm();
+		//hash = HashAlgorithm.getDefaultAlgorithm();
 	}
 
 	public void clearStack() {
