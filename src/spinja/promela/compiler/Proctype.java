@@ -178,8 +178,13 @@ public class Proctype implements VariableContainer {
 	protected void generateConstructor(final StringWriter w) throws ParseException {
 		w.appendLine("public ", getName(), "(boolean decoding) {").indent();
 		{
-			w.appendLine("super(", getSpecification().getName(), "Model.this, new State[",
-				automaton.size(), "], ", automaton.getStartState().getStateId(), ");");
+			if (specification.getNever() == this) {
+				w.appendLine("super(", getSpecification().getName(), "Model.this, new State[",
+						automaton.size(), "], ", automaton.getStartState().getStateId(), ", 0);");
+			} else {
+				w.appendLine("super(", getSpecification().getName(), "Model.this, new State[",
+						automaton.size(), "], ", automaton.getStartState().getStateId(), ");");
+			}
 			w.appendLine();
 			// Generate the table
 			automaton.generateTable(w);
@@ -211,8 +216,7 @@ public class Proctype implements VariableContainer {
 
 	protected void generateLocalVars(final StringWriter w) {
 		for (final Variable var : varStore.getVariables()) {
-			w.appendLine("protected ", var.getType().getJavaName(), (var.getArraySize() > 1	? "[]"
-																							: ""),
+			w.appendLine("protected ", var.getType().getJavaName(), (var.getArraySize() > 1 ? "[]" : ""), 
 				" ", var.getName(), ";");
 		}
 		w.appendLine();
