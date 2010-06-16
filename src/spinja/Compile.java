@@ -20,15 +20,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import spinja.options.BooleanOption;
 import spinja.options.MultiStringOption;
 import spinja.options.OptionParser;
 import spinja.options.StringOption;
-import spinja.util.InputStreamPrinter;
 import spinja.promela.compiler.Proctype;
 import spinja.promela.compiler.Specification;
 import spinja.promela.compiler.optimizer.GraphOptimizer;
@@ -107,6 +103,7 @@ public class Compile {
 		return null;
 	}
 
+	/*
 	private static void compileFiles(final String name, final File outputDir, final File userDir) {
 		final String command = "javac -target 5 -cp \"" + System.getProperty("java.class.path")
 								+ "\" \"" + outputDir.getAbsolutePath()
@@ -204,12 +201,12 @@ public class Compile {
 		sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
 		return sb.toString();
 	}
+	*/
 
 	public static void main(final String[] args) {
-		final Version version = new Version();
 		final String  defaultname = "Pan";
 		final String  shortd  = 
-			"SpinJa Promela Compiler - version " + version.VERSION + " (" + version.DATE + ")\n" +
+			"SpinJa Promela Compiler - version " + Version.VERSION + " (" + Version.DATE + ")\n" +
 			"(C) University of Twente, Formal Methods and Tools group";
 		final String  longd   = 
 			"SpinJa Promela Compiler: this compiler converts a Promela source file\n" +
