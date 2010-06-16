@@ -15,6 +15,6 @@
 package spinja;
 
 public final class Version {
-    public static String VERSION = "0.9";
-    public static String DATE    = "10-Apr-2010";
+    public static String VERSION = "0.9.1";
+    public static String DATE    = "16-Jun-2010";
 }
