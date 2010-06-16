@@ -126,9 +126,8 @@ public class Run extends Thread {
 	}
 
 	public void parseArguments(final String[] args, final String name) {
-		final Version version = new Version();
 		final String  shortd  = 
-			"SpinJa Model Checker - version " + version.VERSION + " (" + version.DATE + ")\n" +
+			"SpinJa Model Checker - version " + Version.VERSION + " (" + Version.DATE + ")\n" +
 			"(C) University of Twente, Formal Methods and Tools group";
 		final String  longd   = 
 			"SpinJa Model Checker is a (generated) Java program which verifies\n" +

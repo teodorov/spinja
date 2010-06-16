@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import spinja.promela.compiler.actions.Action;
-import spinja.promela.compiler.actions.AssignAction;
 import spinja.promela.compiler.actions.ExprAction;
 import spinja.promela.compiler.actions.Sequence;
 import spinja.promela.compiler.expression.Expression;

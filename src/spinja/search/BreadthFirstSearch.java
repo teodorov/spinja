@@ -23,12 +23,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import spinja.exceptions.SpinJaException;
-import spinja.model.Condition;
 import spinja.model.Model;
 import spinja.model.Transition;
 import spinja.store.StateStore;
 import spinja.util.ByteArrayStorage;
-import spinja.util.DataReader;
 
 public class BreadthFirstSearch<M extends Model<T>, T extends Transition> extends
 	SearchAlgorithm<M, T> {

@@ -55,7 +55,6 @@ public abstract class Action {
 		}
 	}
 
-	@SuppressWarnings("unused")
 	public void printExtraFunctions(final StringWriter w) throws ParseException {
 		// By default there are no extra functions
 	}
@@ -70,7 +69,6 @@ public abstract class Action {
 
 	public abstract void printTakeStatement(StringWriter w) throws ParseException;
 
-	@SuppressWarnings("unused")
 	public void printUndoStatement(final StringWriter w) throws ParseException {
 	}
 
