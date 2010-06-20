@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,7 @@ import spinja.model.Model;
 import spinja.model.Transition;
 import spinja.store.StateStore;
 
-public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Transition> extends
-	DepthFirstSearch<M, T> {
+public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Transition> extends DepthFirstSearch<M, T> {
 	private final Transition enterNestedSearch = new Transition() {
 		@Override
 		public int getId() {
@@ -37,14 +36,14 @@ public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Trans
 		}
 
 		@Override
-		public void undo() {
-			toggle = false;
-			seed = null;
+		public String toString() {
+			return "Enter nested search";
 		}
 
 		@Override
-		public String toString() {
-			return "Enter nested search";
+		public void undo() {
+			toggle = false;
+			seed = null;
 		}
 	};
 
@@ -55,20 +54,11 @@ public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Trans
 	private byte[] seed;
 
 	public NestedDepthFirstSearch(final M model, final StateStore store, final int stackSize,
-		final boolean errorExceedDepth, final boolean checkForDeadlocks, final int maxErrors,
-		final TransitionCalculator<M, T> nextTransition) {
-		super(model, store, stackSize, errorExceedDepth, checkForDeadlocks, maxErrors,
-			nextTransition);
+			final boolean errorExceedDepth, final boolean checkForDeadlocks, final int maxErrors,
+			final TransitionCalculator<M, T> nextTransition) {
+		super(model, store, stackSize, errorExceedDepth, checkForDeadlocks, maxErrors, nextTransition);
 		toggle = false;
 		seed = null;
-	}
-
-	@Override
-	protected byte[] storeModel() {
-		storage.init(model.getSize() + 1);
-		storage.writeBoolean(toggle);
-		model.encode(storage);
-		return storage.getBuffer();
 	}
 
 	protected abstract boolean conditionHolds();
@@ -81,10 +71,10 @@ public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Trans
 		final Transition last = stack.getLastTransition();
 
 		if (last == enterNestedSearch) {
-			return nextTransition.next(model, null);
+			return null;
 		} else {
 			T next = nextTransition.next(model, (T) last);
-			if (next == null && last != null && !toggle) {
+			if (next == null && last != null && !toggle && conditionHolds()) {
 				return enterNestedSearch;
 			}
 			return next;
@@ -92,10 +82,20 @@ public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Trans
 	}
 
 	@Override
-	protected void takeTransition(Transition next) throws SpinJaException {
-		if (toggle) {
-			super.takeTransition(next);
+	protected byte[] storeModel() {
+		storage.init(model.getSize() + 1);
+		storage.writeBoolean(toggle);
+		model.encode(storage);
+		return storage.getBuffer();
+	}
 
+	@Override
+	protected void takeTransition(final Transition next) throws SpinJaException {
+		final boolean toggled = toggle;
+
+		super.takeTransition(next);
+
+		if (toggled && conditionHolds()) {
 			// If in nested search check for the cycle
 			byte[] curr = storeModel();
 			if (Arrays.equals(curr, seed)) {
@@ -106,8 +106,6 @@ public abstract class NestedDepthFirstSearch<M extends Model<T>, T extends Trans
 			if (stack.containsState(curr)) {
 				throw new ValidationException(getDescription() + " detected");
 			}
-		} else {
-			super.takeTransition(next);
 		}
 	}
 }
